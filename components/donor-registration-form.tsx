@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, UserPlus } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
 
 export function DonorRegistrationForm() {
   const [name, setName] = useState("")
