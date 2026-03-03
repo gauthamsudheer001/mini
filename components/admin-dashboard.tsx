@@ -43,7 +43,6 @@ import {
   Menu,
   X,
 } from "lucide-react"
-import { donors as initialDonors, bloodGroups, type Donor } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 
 // Sidebar navigation items

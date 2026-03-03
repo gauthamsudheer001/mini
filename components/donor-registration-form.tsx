@@ -18,7 +18,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, UserPlus } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { bloodGroups } from "@/lib/mock-data"
 
 export function DonorRegistrationForm() {
   const [name, setName] = useState("")
@@ -65,18 +64,40 @@ export function DonorRegistrationForm() {
     return Object.keys(newErrors).length === 0
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault()
 
-    if (!validate()) return
+  if (!validate()) return
 
-    setIsSubmitting(true)
+  setIsSubmitting(true)
 
-    setTimeout(() => {
+  try {
+    const res = await fetch("/api/donors", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        age,
+        email,
+        bloodGroup,
+        phone,
+        location,
+        healthStatus,
+        previouslyDonated,
+        lastDonationDate,
+      }),
+    })
+
+    const result = await res.json()
+
+    if (result.success) {
       toast.success("Registration successful!", {
         description: `Thank you ${name}, you have been registered as a ${bloodGroup} donor.`,
       })
 
+      // Reset form
       setName("")
       setAge("")
       setEmail("")
@@ -87,9 +108,17 @@ export function DonorRegistrationForm() {
       setPreviouslyDonated("")
       setLastDonationDate(undefined)
       setErrors({})
-      setIsSubmitting(false)
-    }, 1000)
+    } else {
+      toast.error("Something went wrong.")
+    }
+
+  } catch (error) {
+    console.error(error)
+    toast.error("Server error. Please try again.")
   }
+
+  setIsSubmitting(false)
+}
 
   return (
     <Card className="mx-auto w-full max-w-xl border-border">
