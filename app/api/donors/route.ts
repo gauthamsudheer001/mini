@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server"
-import { MongoClient } from "mongodb"
+import { MongoClient, ObjectId } from "mongodb"
 
+const uri = process.env.MONGO_URI!
+
+// ================= CREATE DONOR =================
 export async function POST(req: Request) {
   try {
-    if (!process.env.MONGO_URI) {
-      return NextResponse.json(
-        { success: false, error: "Missing MONGO_URI" },
-        { status: 500 }
-      )
-    }
-
-    const client = new MongoClient(process.env.MONGO_URI)
+    const client = new MongoClient(uri)
     await client.connect()
 
     const db = client.db("bloodDonation")
@@ -18,6 +14,7 @@ export async function POST(req: Request) {
 
     await db.collection("donors").insertOne({
       ...data,
+      availability: "Active", // default status
       createdAt: new Date(),
     })
 
@@ -25,8 +22,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error("Mongo Error:", error.message)
-
+    console.error("POST Error:", error.message)
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -34,16 +30,10 @@ export async function POST(req: Request) {
   }
 }
 
+// ================= GET DONORS =================
 export async function GET() {
   try {
-    if (!process.env.MONGO_URI) {
-      return NextResponse.json(
-        { success: false, error: "Missing MONGO_URI" },
-        { status: 500 }
-      )
-    }
-
-    const client = new MongoClient(process.env.MONGO_URI)
+    const client = new MongoClient(uri)
     await client.connect()
 
     const db = client.db("bloodDonation")
@@ -53,8 +43,33 @@ export async function GET() {
 
     return NextResponse.json(donors)
   } catch (error: any) {
-    console.error("Mongo Error:", error.message)
+    console.error("GET Error:", error.message)
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    )
+  }
+}
 
+// ================= UPDATE DONOR =================
+export async function PUT(req: Request) {
+  try {
+    const client = new MongoClient(uri)
+    await client.connect()
+
+    const db = client.db("bloodDonation")
+    const { id, ...updateData } = await req.json()
+
+    await db.collection("donors").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    )
+
+    await client.close()
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    console.error("PUT Error:", error.message)
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
