@@ -8,13 +8,30 @@ import {
   Droplets,
   Heart,
   Trash2,
-  ToggleLeft,
   ToggleRight,
+  ToggleLeft,
+  Pencil,
 } from "lucide-react"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 type Donor = {
   id: string
@@ -28,38 +45,42 @@ type Donor = {
 
 export function AdminDashboard() {
   const [donorList, setDonorList] = useState<Donor[]>([])
+  const [editOpen, setEditOpen] = useState(false)
+  const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null)
 
-  // 🔥 FETCH REAL DATA
+  // ================= FETCH DONORS =================
   useEffect(() => {
-    async function fetchDonors() {
-      const res = await fetch("/api/donors")
-      const data = await res.json()
-
-      const formatted = data.map((d: any) => ({
-        id: d._id,
-        name: d.name,
-        bloodGroup: d.bloodGroup,
-        phone: d.phone,
-        location: d.location,
-        healthStatus: d.healthStatus,
-        availability: "Active",
-      }))
-
-      setDonorList(formatted)
-    }
-
     fetchDonors()
   }, [])
 
+  async function fetchDonors() {
+    const res = await fetch("/api/donors")
+    const data = await res.json()
+
+    const formatted = data.map((d: any) => ({
+      id: d._id,
+      name: d.name,
+      bloodGroup: d.bloodGroup,
+      phone: d.phone,
+      location: d.location,
+      healthStatus: d.healthStatus,
+      availability: d.availability || "Active",
+    }))
+
+    setDonorList(formatted)
+  }
+
+  // ================= DELETE (UI ONLY FOR NOW) =================
   function handleDelete(id: string) {
     const donor = donorList.find((d) => d.id === id)
     setDonorList((prev) => prev.filter((d) => d.id !== id))
 
     toast.success("Donor removed", {
-      description: `${donor?.name} removed successfully.`,
+      description: `${donor?.name} removed.`,
     })
   }
 
+  // ================= TOGGLE =================
   function handleToggle(id: string) {
     setDonorList((prev) =>
       prev.map((d) =>
@@ -74,6 +95,28 @@ export function AdminDashboard() {
     )
   }
 
+  // ================= UPDATE DONOR =================
+  async function handleUpdate() {
+    if (!selectedDonor) return
+
+    const res = await fetch("/api/donors", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(selectedDonor),
+    })
+
+    const result = await res.json()
+
+    if (result.success) {
+      toast.success("Donor updated successfully")
+      setEditOpen(false)
+      fetchDonors()
+    } else {
+      toast.error("Update failed")
+    }
+  }
+
+  // ================= STATS =================
   const totalDonors = donorList.length
   const activeDonors = donorList.filter(
     (d) => d.availability === "Active"
@@ -81,7 +124,9 @@ export function AdminDashboard() {
   const healthyDonors = donorList.filter(
     (d) => d.healthStatus === "Good"
   ).length
-  const bloodGroups = new Set(donorList.map((d) => d.bloodGroup)).size
+  const bloodGroups = new Set(
+    donorList.map((d) => d.bloodGroup)
+  ).size
 
   return (
     <div className="p-6 space-y-8">
@@ -129,7 +174,7 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {/* ================= DONOR TABLE ================= */}
+      {/* ================= TABLE ================= */}
       <Card>
         <CardHeader>
           <CardTitle>All Donors</CardTitle>
@@ -203,6 +248,17 @@ export function AdminDashboard() {
                         <Button
                           size="icon"
                           variant="ghost"
+                          onClick={() => {
+                            setSelectedDonor(donor)
+                            setEditOpen(true)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
                           onClick={() => handleToggle(donor.id)}
                         >
                           {donor.availability === "Active" ? (
@@ -228,6 +284,64 @@ export function AdminDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* ================= EDIT MODAL ================= */}
+      {selectedDonor && (
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Donor</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <Label>Name</Label>
+                <Input
+                  value={selectedDonor.name}
+                  onChange={(e) =>
+                    setSelectedDonor({
+                      ...selectedDonor,
+                      name: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Phone</Label>
+                <Input
+                  value={selectedDonor.phone}
+                  onChange={(e) =>
+                    setSelectedDonor({
+                      ...selectedDonor,
+                      phone: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label>Location</Label>
+                <Input
+                  value={selectedDonor.location}
+                  onChange={(e) =>
+                    setSelectedDonor({
+                      ...selectedDonor,
+                      location: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button onClick={handleUpdate}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
