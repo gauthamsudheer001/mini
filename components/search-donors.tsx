@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Search, MapPin, Phone, Droplets, UserSearch } from "lucide-react"
-import { donors, bloodGroups, type Donor } from "@/lib/mock-data"
+
 
 function DonorCard({ donor }: { donor: Donor }) {
   return (
