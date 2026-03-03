@@ -1,21 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  LayoutDashboard,
   Users,
   Activity,
+  Droplets,
+  Heart,
   Trash2,
   ToggleLeft,
   ToggleRight,
-  Heart,
-  Menu,
-  X,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 type Donor = {
   id: string
@@ -27,37 +26,26 @@ type Donor = {
   availability: "Active" | "Unavailable"
 }
 
-const sidebarItems = [
-  { icon: LayoutDashboard, label: "Overview", id: "overview" },
-  { icon: Users, label: "Donors", id: "donors" },
-]
-
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("overview")
   const [donorList, setDonorList] = useState<Donor[]>([])
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // 🔥 FETCH DONORS FROM DATABASE
+  // 🔥 FETCH REAL DATA
   useEffect(() => {
     async function fetchDonors() {
-      try {
-        const res = await fetch("/api/donors")
-        const data = await res.json()
+      const res = await fetch("/api/donors")
+      const data = await res.json()
 
-        const formatted = data.map((d: any) => ({
-          id: d._id,
-          name: d.name,
-          bloodGroup: d.bloodGroup,
-          phone: d.phone,
-          location: d.location,
-          healthStatus: d.healthStatus,
-          availability: "Active",
-        }))
+      const formatted = data.map((d: any) => ({
+        id: d._id,
+        name: d.name,
+        bloodGroup: d.bloodGroup,
+        phone: d.phone,
+        location: d.location,
+        healthStatus: d.healthStatus,
+        availability: "Active",
+      }))
 
-        setDonorList(formatted)
-      } catch (error) {
-        console.error("Error fetching donors")
-      }
+      setDonorList(formatted)
     }
 
     fetchDonors()
@@ -68,7 +56,7 @@ export function AdminDashboard() {
     setDonorList((prev) => prev.filter((d) => d.id !== id))
 
     toast.success("Donor removed", {
-      description: `${donor?.name} has been removed.`,
+      description: `${donor?.name} removed successfully.`,
     })
   }
 
@@ -90,143 +78,156 @@ export function AdminDashboard() {
   const activeDonors = donorList.filter(
     (d) => d.availability === "Active"
   ).length
+  const healthyDonors = donorList.filter(
+    (d) => d.healthStatus === "Good"
+  ).length
+  const bloodGroups = new Set(donorList.map((d) => d.bloodGroup)).size
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r bg-card transition-transform lg:static lg:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className="flex h-16 items-center justify-between px-5">
-          <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary" />
-            <span className="font-bold">Admin</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <div className="p-6 space-y-8">
 
-        <nav className="flex flex-1 flex-col gap-1 p-3">
-          {sidebarItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
-                activeTab === item.id
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground"
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </aside>
+      {/* ================= OVERVIEW CARDS ================= */}
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardContent className="flex items-center gap-4 p-6">
+            <Users className="h-6 w-6 text-primary" />
+            <div>
+              <p className="text-sm text-muted-foreground">Total Donors</p>
+              <p className="text-2xl font-bold">{totalDonors}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="flex-1 bg-background p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl font-semibold">
-            {activeTab === "overview" ? "Dashboard Overview" : "Manage Donors"}
-          </h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-        </div>
+        <Card>
+          <CardContent className="flex items-center gap-4 p-6">
+            <Activity className="h-6 w-6 text-green-600" />
+            <div>
+              <p className="text-sm text-muted-foreground">Active Donors</p>
+              <p className="text-2xl font-bold">{activeDonors}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        {activeTab === "overview" && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Card>
-              <CardContent className="flex items-center gap-4 p-5">
-                <Users className="h-6 w-6 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Total Donors
-                  </p>
-                  <p className="text-2xl font-bold">{totalDonors}</p>
-                </div>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardContent className="flex items-center gap-4 p-6">
+            <Droplets className="h-6 w-6 text-red-500" />
+            <div>
+              <p className="text-sm text-muted-foreground">Blood Groups</p>
+              <p className="text-2xl font-bold">{bloodGroups}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardContent className="flex items-center gap-4 p-5">
-                <Activity className="h-6 w-6 text-green-600" />
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Active Donors
-                  </p>
-                  <p className="text-2xl font-bold">{activeDonors}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "donors" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>All Donors</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {donorList.length === 0 ? (
-                <p className="text-muted-foreground">
-                  No donors registered yet.
-                </p>
-              ) : (
-                donorList.map((donor) => (
-                  <div
-                    key={donor.id}
-                    className="mb-3 flex items-center justify-between rounded border p-3"
-                  >
-                    <div>
-                      <p className="font-medium">{donor.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {donor.bloodGroup} • {donor.location}
-                      </p>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleToggle(donor.id)}
-                      >
-                        {donor.availability === "Active" ? (
-                          <ToggleRight className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <ToggleLeft className="h-4 w-4" />
-                        )}
-                      </Button>
-
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDelete(donor.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <Card>
+          <CardContent className="flex items-center gap-4 p-6">
+            <Heart className="h-6 w-6 text-green-600" />
+            <div>
+              <p className="text-sm text-muted-foreground">Healthy Donors</p>
+              <p className="text-2xl font-bold">{healthyDonors}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* ================= DONOR TABLE ================= */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Donors</CardTitle>
+        </CardHeader>
+
+        <CardContent>
+          {donorList.length === 0 ? (
+            <p className="text-muted-foreground">
+              No donors registered yet.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b">
+                  <tr className="text-left text-muted-foreground">
+                    <th className="py-3">Name</th>
+                    <th>Blood Group</th>
+                    <th>Phone</th>
+                    <th>Location</th>
+                    <th>Health</th>
+                    <th>Status</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {donorList.map((donor) => (
+                    <tr
+                      key={donor.id}
+                      className="border-b hover:bg-muted/40 transition"
+                    >
+                      <td className="py-3 font-medium">
+                        {donor.name}
+                      </td>
+
+                      <td>
+                        <Badge variant="outline">
+                          {donor.bloodGroup}
+                        </Badge>
+                      </td>
+
+                      <td>{donor.phone}</td>
+
+                      <td>{donor.location}</td>
+
+                      <td>
+                        <Badge
+                          className={
+                            donor.healthStatus === "Good"
+                              ? "bg-green-600 text-white"
+                              : "bg-secondary"
+                          }
+                        >
+                          {donor.healthStatus}
+                        </Badge>
+                      </td>
+
+                      <td>
+                        <Badge
+                          className={
+                            donor.availability === "Active"
+                              ? "bg-green-600 text-white"
+                              : "bg-secondary"
+                          }
+                        >
+                          {donor.availability}
+                        </Badge>
+                      </td>
+
+                      <td className="text-right space-x-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleToggle(donor.id)}
+                        >
+                          {donor.availability === "Active" ? (
+                            <ToggleRight className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <ToggleLeft className="h-4 w-4" />
+                          )}
+                        </Button>
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(donor.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

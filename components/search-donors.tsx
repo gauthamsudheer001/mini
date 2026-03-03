@@ -1,19 +1,24 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 
 type Donor = {
   id: string
   name: string
   bloodGroup: string
   location: string
+  healthStatus: string
+  availability: string
 }
 
 export function SearchDonors() {
-  const [query, setQuery] = useState("")
   const [donors, setDonors] = useState<Donor[]>([])
+  const [bloodFilter, setBloodFilter] = useState("")
+  const [locationFilter, setLocationFilter] = useState("")
 
   useEffect(() => {
     async function fetchDonors() {
@@ -25,6 +30,8 @@ export function SearchDonors() {
         name: d.name,
         bloodGroup: d.bloodGroup,
         location: d.location,
+        healthStatus: d.healthStatus,
+        availability: "Active",
       }))
 
       setDonors(formatted)
@@ -33,32 +40,65 @@ export function SearchDonors() {
     fetchDonors()
   }, [])
 
-  const filtered = donors.filter((d) =>
-    d.bloodGroup.toLowerCase().includes(query.toLowerCase())
-  )
+  const filtered = donors.filter((d) => {
+    return (
+      (bloodFilter ? d.bloodGroup === bloodFilter : true) &&
+      (locationFilter
+        ? d.location.toLowerCase().includes(locationFilter.toLowerCase())
+        : true)
+    )
+  })
 
   return (
-    <div className="p-6 flex flex-col gap-6">
-      <Input
-        placeholder="Search by blood group..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Select onValueChange={setBloodFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="All Blood Groups" />
+          </SelectTrigger>
+          <SelectContent>
+            {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+              <SelectItem key={bg} value={bg}>
+                {bg}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {filtered.length === 0 ? (
-        <p className="text-muted-foreground">No donors found.</p>
-      ) : (
-        filtered.map((donor) => (
+        <Input
+          placeholder="Search by city..."
+          value={locationFilter}
+          onChange={(e) => setLocationFilter(e.target.value)}
+        />
+      </div>
+
+      <p className="text-sm text-muted-foreground">
+        {filtered.length} donors found
+      </p>
+
+      {/* Cards */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {filtered.map((donor) => (
           <Card key={donor.id}>
-            <CardContent className="p-4">
-              <p className="font-medium">{donor.name}</p>
+            <CardContent className="p-5 space-y-3">
+              <div className="flex justify-between">
+                <h3 className="font-semibold">{donor.name}</h3>
+                <Badge>{donor.bloodGroup}</Badge>
+              </div>
+
               <p className="text-sm text-muted-foreground">
-                {donor.bloodGroup} • {donor.location}
+                📍 {donor.location}
               </p>
+
+              <div className="flex justify-between text-sm">
+                <Badge variant="outline">{donor.availability}</Badge>
+                <span>Health: {donor.healthStatus}</span>
+              </div>
             </CardContent>
           </Card>
-        ))
-      )}
+        ))}
+      </div>
     </div>
   )
 }
