@@ -1,16 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   LayoutDashboard,
   Users,
-  Droplets,
   Activity,
-  Pencil,
   Trash2,
   ToggleLeft,
   ToggleRight,
@@ -30,8 +27,6 @@ type Donor = {
   availability: "Active" | "Unavailable"
 }
 
-const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
-
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Overview", id: "overview" },
   { icon: Users, label: "Donors", id: "donors" },
@@ -42,9 +37,36 @@ export function AdminDashboard() {
   const [donorList, setDonorList] = useState<Donor[]>([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // 🔥 FETCH DONORS FROM DATABASE
+  useEffect(() => {
+    async function fetchDonors() {
+      try {
+        const res = await fetch("/api/donors")
+        const data = await res.json()
+
+        const formatted = data.map((d: any) => ({
+          id: d._id,
+          name: d.name,
+          bloodGroup: d.bloodGroup,
+          phone: d.phone,
+          location: d.location,
+          healthStatus: d.healthStatus,
+          availability: "Active",
+        }))
+
+        setDonorList(formatted)
+      } catch (error) {
+        console.error("Error fetching donors")
+      }
+    }
+
+    fetchDonors()
+  }, [])
+
   function handleDelete(id: string) {
     const donor = donorList.find((d) => d.id === id)
     setDonorList((prev) => prev.filter((d) => d.id !== id))
+
     toast.success("Donor removed", {
       description: `${donor?.name} has been removed.`,
     })
@@ -71,7 +93,6 @@ export function AdminDashboard() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
-      {/* Sidebar */}
       <aside
         className={cn(
           "fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r bg-card transition-transform lg:static lg:translate-x-0",
@@ -112,7 +133,6 @@ export function AdminDashboard() {
         </nav>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 bg-background p-6">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-semibold">
@@ -129,7 +149,7 @@ export function AdminDashboard() {
         </div>
 
         {activeTab === "overview" && (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Card>
               <CardContent className="flex items-center gap-4 p-5">
                 <Users className="h-6 w-6 text-primary" />

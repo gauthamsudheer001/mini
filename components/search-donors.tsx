@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -13,7 +13,25 @@ type Donor = {
 
 export function SearchDonors() {
   const [query, setQuery] = useState("")
-  const [donors] = useState<Donor[]>([]) // empty for now
+  const [donors, setDonors] = useState<Donor[]>([])
+
+  useEffect(() => {
+    async function fetchDonors() {
+      const res = await fetch("/api/donors")
+      const data = await res.json()
+
+      const formatted = data.map((d: any) => ({
+        id: d._id,
+        name: d.name,
+        bloodGroup: d.bloodGroup,
+        location: d.location,
+      }))
+
+      setDonors(formatted)
+    }
+
+    fetchDonors()
+  }, [])
 
   const filtered = donors.filter((d) =>
     d.bloodGroup.toLowerCase().includes(query.toLowerCase())
